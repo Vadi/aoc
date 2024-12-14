@@ -28,11 +28,33 @@ fn readFile(allocator: std.mem.Allocator, filename: []const u8) ![]const u8 {
     return try cwd.readFileAlloc(allocator, filename, file_size);
 }
 
+fn hasNotIncreasingAndDescreasing(levelsList: *std.ArrayList(u32)) bool {
+    var increasing = true;
+    var decreasing = true;
+
+    for (levelsList.items[0 .. levelsList.items.len - 1], levelsList.items[1..]) |curr, next| {
+        const diff = if (next > curr) next - curr else curr - next;
+        const valid_diff = diff >= 1 and diff <= 3;
+
+        if (curr >= next or !valid_diff) increasing = false;
+        if (curr <= next or !valid_diff) decreasing = false;
+
+        if (!increasing and !decreasing) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 pub fn main() !void {
+    // const input_file = "unsafe.txt";
     const input_file = "day_02_input.txt";
     const allocator = std.heap.page_allocator;
 
     var safeCounter: u32 = 0;
+    var unsafeCounter: u32 = 0;
+    // var partTwoSafeCounter: u32 = 0;
 
     const content = try readFile(allocator, input_file);
     defer allocator.free(content);
@@ -50,33 +72,53 @@ pub fn main() !void {
                 try levelsList.append(value);
             }
 
-            var increasing = true;
-            var decreasing = true;
-
-            for (levelsList.items[0 .. levelsList.items.len - 1], levelsList.items[1..]) |curr, next| {
-                std.debug.print("{d} - {d}\n", .{ curr, next });
-                const diff = if (next > curr) next - curr else curr - next;
-                const valid_diff = diff >= 1 and diff <= 3;
-
-                if (curr >= next or !valid_diff) increasing = false;
-                if (curr <= next or !valid_diff) decreasing = false;
-
-                if (!increasing and !decreasing) break;
-            }
-
-            var outcome = "S";
-
-            if (increasing or decreasing) outcome = "S" else outcome = "U";
+            const res0 = hasNotIncreasingAndDescreasing(&levelsList);
+            const outcome = if (res0) "U" else "S";
 
             for (levelsList.items) |item| {
                 std.debug.print("{d} ", .{item});
             }
             std.debug.print("= {s} \n", .{outcome});
+
             start = i + 1;
 
-            if (std.mem.eql(u8, outcome, "S")) safeCounter = safeCounter + 1;
+            if (std.mem.eql(u8, outcome, "S")) {
+                safeCounter = safeCounter + 1;
+            }
+
+            if (std.mem.eql(u8, outcome, "U")) {
+                const original_items = levelsList.items;
+                for (original_items, 0..) |_, remove_index| {
+                    std.debug.print("running for {d}\n", .{remove_index});
+                    var filtered_list = std.ArrayList(u32).init(allocator);
+                    defer filtered_list.deinit();
+                    for (original_items, 0..) |item, original_index| {
+                        std.debug.print("running for {d} and {d}\n", .{ remove_index, original_index });
+                        if (original_index != remove_index) {
+                            filtered_list.append(item) catch unreachable;
+                        }
+                    }
+
+                    const res = hasNotIncreasingAndDescreasing(&filtered_list);
+                    const second_attempt = if (res) "U" else "S";
+
+                    for (filtered_list.items) |f| {
+                        std.debug.print("{d}", .{f});
+                    }
+
+                    std.debug.print("= {s}\n", .{second_attempt});
+
+                    if (std.mem.eql(u8, second_attempt, "S")) {
+                        safeCounter = safeCounter + 1;
+                        std.debug.print("Counting second time\n", .{});
+                        break;
+                    }
+                }
+                unsafeCounter = unsafeCounter + 1;
+            }
         }
     }
 
-    std.debug.print("Safe levels are {d}", .{safeCounter});
+    std.debug.print("Safe levels are {d}\n", .{safeCounter});
+    std.debug.print("Unsafe levels are {d}\n", .{unsafeCounter});
 }
