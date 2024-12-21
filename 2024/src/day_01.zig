@@ -1,16 +1,15 @@
 const std = @import("std");
 
-pub fn main() !void {
-    const input_file = "day_01_input.txt";
-    // const input_file = "example.txt";
+pub fn run() void {
+    const input_file = "resources/day_01_input.txt";
 
     const allocator = std.heap.page_allocator;
     const cwd = std.fs.cwd();
 
-    const file_metadata = try cwd.statFile(input_file);
+    const file_metadata = cwd.statFile(input_file) catch unreachable;
     const file_size = file_metadata.size;
 
-    const file_content = try cwd.readFileAlloc(allocator, input_file, file_size);
+    const file_content = cwd.readFileAlloc(allocator, input_file, file_size) catch unreachable;
     defer allocator.free(file_content);
 
     var leftSegment = std.ArrayList(u32).init(allocator);
@@ -31,14 +30,14 @@ pub fn main() !void {
 
             if (leftElement.len > 0) {
                 const trimmedLeft = std.mem.trim(u8, leftElement, " ");
-                const leftValue = try std.fmt.parseInt(u32, trimmedLeft, 10);
-                try leftSegment.append(leftValue);
+                const leftValue = std.fmt.parseInt(u32, trimmedLeft, 10) catch unreachable;
+                leftSegment.append(leftValue) catch unreachable;
             }
 
             if (rightElement != null) {
                 const trimmedRight = std.mem.trim(u8, rightElement.?, " ");
-                const rightValue = try std.fmt.parseInt(u32, trimmedRight, 10);
-                try rightSegment.append(rightValue);
+                const rightValue = std.fmt.parseInt(u32, trimmedRight, 10) catch unreachable;
+                rightSegment.append(rightValue) catch unreachable;
             }
 
             start = i + 1;

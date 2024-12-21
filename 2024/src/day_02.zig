@@ -22,6 +22,7 @@ const Outcome = enum { safe, unsafe, neither };
 
 fn readFile(allocator: std.mem.Allocator, filename: []const u8) ![]const u8 {
     const cwd = std.fs.cwd();
+
     const file_metadata = try cwd.statFile(filename);
     const file_size = file_metadata.size;
 
@@ -47,16 +48,19 @@ fn hasNotIncreasingAndDescreasing(levelsList: *std.ArrayList(u32)) bool {
     return false;
 }
 
-pub fn main() !void {
+pub fn run() void {
     // const input_file = "unsafe.txt";
-    const input_file = "day_02_input.txt";
+    const input_file = "resources/day_02_input.txt";
     const allocator = std.heap.page_allocator;
 
     var safeCounter: u32 = 0;
     var unsafeCounter: u32 = 0;
     // var partTwoSafeCounter: u32 = 0;
 
-    const content = try readFile(allocator, input_file);
+    const content = readFile(allocator, input_file) catch |err| {
+        std.debug.print("Error while reading the file - {any}", .{err});
+        return;
+    };
     defer allocator.free(content);
 
     var start: usize = 0;
@@ -68,8 +72,8 @@ pub fn main() !void {
             var levelsString = std.mem.splitSequence(u8, line, " ");
             while (levelsString.next()) |level| {
                 const trimmedValue = std.mem.trim(u8, level, " ");
-                const value = try std.fmt.parseInt(u32, trimmedValue, 10);
-                try levelsList.append(value);
+                const value = std.fmt.parseInt(u32, trimmedValue, 10) catch unreachable;
+                levelsList.append(value) catch unreachable;
             }
 
             const res0 = hasNotIncreasingAndDescreasing(&levelsList);
